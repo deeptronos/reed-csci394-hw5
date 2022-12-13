@@ -2,3 +2,5 @@
 *.o
 dwislpyc/dwislpyc
 *.output
+dwislpyc/spim-cmd/spim
+dwislpyc/spim
