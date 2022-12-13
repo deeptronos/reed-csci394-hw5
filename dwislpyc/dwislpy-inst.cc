@@ -28,27 +28,27 @@ std::string INPT_BUFF_LBL; // Label for the 80-character `input` buffer.
 // into their intermediate representation,
 //
 void Prgm::trans(void) {
-    
+
     // Make the global symbol table shared by all the program's IR.
     //
     glbl_symt_ptr = SymT_ptr { new SymT {} };
 
     // Create labels for the global string constants needed.
     //
-    EOLN_STRG_LBL = glbl_symt_ptr->add_strg("\n"); 
-    TRUE_STRG_LBL = glbl_symt_ptr->add_strg("True"); 
-    FLSE_STRG_LBL = glbl_symt_ptr->add_strg("False"); 
-    NONE_STRG_LBL = glbl_symt_ptr->add_strg("None"); 
-    INPT_BUFF_LBL = glbl_symt_ptr->add_strg("12345678901234567890123456789012345678901234567890123456789012345678901234567890"); 
+    EOLN_STRG_LBL = glbl_symt_ptr->add_strg("\n");
+    TRUE_STRG_LBL = glbl_symt_ptr->add_strg("True");
+    FLSE_STRG_LBL = glbl_symt_ptr->add_strg("False");
+    NONE_STRG_LBL = glbl_symt_ptr->add_strg("None");
+    INPT_BUFF_LBL = glbl_symt_ptr->add_strg("12345678901234567890123456789012345678901234567890123456789012345678901234567890");
 
     // Translate each definition into IR.
-    // 
+    //
     for (std::pair<Name,Defn_ptr> dfpr : defs) {
         Defn_ptr defn = dfpr.second;
         defn->symt.set_parent(glbl_symt_ptr); // Set parent to global table.
         defn->trans();
     }
-    
+
     // Translate the main script into IR labelled as `main`
     //
     main_code = INST_vec {};
@@ -78,7 +78,7 @@ void Defn::trans(void) {
     code.push_back(INST_ptr { new ENTER {} });
     body->trans(ext_lbl,symt,code);
     code.push_back(INST_ptr { new LBL {ext_lbl} });
-    code.push_back(INST_ptr { new LEAVE {} }); 
+    code.push_back(INST_ptr { new LEAVE {} });
 }
 
 //
@@ -96,7 +96,7 @@ void Blck::trans(std::string exit, SymT& symt, INST_vec& code) {
     }
 }
 
-// * * * * * 
+// * * * * *
 //
 // Stmt::trans(exit,symt,code)
 //
@@ -161,7 +161,7 @@ void Prnt::trans([[maybe_unused]]std::string exit,
         code.push_back(INST_ptr {new LBL {flse_lbl}});
         code.push_back(INST_ptr {new STL {temp,FLSE_STRG_LBL}});
         code.push_back(INST_ptr {new LBL {done_lbl}});
-        code.push_back(INST_ptr {new PTS {temp}});        
+        code.push_back(INST_ptr {new PTS {temp}});
     }
     if (std::holds_alternative<NoneTy>(expn->type)) {
         std::string dumm = symt.add_temp(NoneTy {});
@@ -169,14 +169,14 @@ void Prnt::trans([[maybe_unused]]std::string exit,
         //
         expn->trans(dumm,symt,code);
         code.push_back(INST_ptr {new STL {temp,NONE_STRG_LBL}});
-        code.push_back(INST_ptr {new PTS {temp}});        
+        code.push_back(INST_ptr {new PTS {temp}});
     }
     std::string eoln = symt.add_temp(StrTy {});
     code.push_back(INST_ptr {new STL {eoln,EOLN_STRG_LBL}});
-    code.push_back(INST_ptr {new PTS {eoln}});        
+    code.push_back(INST_ptr {new PTS {eoln}});
 }
 
-// * * * * * 
+// * * * * *
 //
 // Expn::trans(dest,symt,code)
 //
@@ -205,14 +205,86 @@ void Plus::trans(std::string dest, SymT& symt, INST_vec& code) {
     }
 }
 
+void Mnus::trans(std::string dest, SymT& symt, INST_vec& code) {
+    if (std::holds_alternative<IntTy>(type)) {
+        std::string srce1 = symt.add_temp(left->type);
+        std::string srce2 = symt.add_temp(rght->type);
+        left->trans(srce1,symt,code);
+        rght->trans(srce2,symt,code);
+        code.push_back(INST_ptr {new SUB {dest,srce1,srce2}});
+    }
+}
+
+void Tmes::trans(std::string dest, SymT& symt, INST_vec& code) {
+    if (std::holds_alternative<IntTy>(type)) {
+        std::string srce1 = symt.add_temp(left->type);
+        std::string srce2 = symt.add_temp(rght->type);
+        left->trans(srce1,symt,code);
+        rght->trans(srce2,symt,code);
+        code.push_back(INST_ptr {new ADD {dest,0,srce1*srce2}});
+    }
+}
+
+void PlEq::trans([[maybe_unused]]std::string exit,
+                 SymT& symt, INST_vec& code) {
+    expn->trans(name,symt,code);
+}
+
+void MnEq::trans([[maybe_unused]]std::string exit,
+                 SymT& symt, INST_vec& code) {
+    expn->trans(name,symt,code);
+}
+
+void TmEq::trans([[maybe_unused]]std::string exit,
+                 SymT& symt, INST_vec& code) {
+    expn->trans(name,symt,code);
+}
+
+void Whle::trans(std::string dest, SymT& symt, INST_vec& code) { //not done
+    if (std::holds_alternative<IntTy>(type)) {
+        std::string srce1 = symt.add_temp(left->type);
+        std::string srce2 = symt.add_temp(rght->type);
+        left->trans(srce1,symt,code);
+        rght->trans(srce2,symt,code);
+        code.push_back(INST_ptr {new ADD {dest,srce1,srce2}});
+    }
+}
+
+
 void Expn::trans_cndn([[maybe_unused]]std::string then_lbl,
                       [[maybe_unused]]std::string else_lbl,
                       [[maybe_unused]]SymT& symt,
                       [[maybe_unused]]INST_vec& code) {
-    
+
     // This is a bogus method that should be overridden by
     // any expression that could yield a `bool` value.
-    
+
+}
+
+void LsEq::trans(std::string dest, SymT& symt, INST_vec& code) {
+    std::string true_lbl = symt.add_labl();
+    std::string flse_lbl = symt.add_labl();
+    std::string done_lbl = symt.add_labl();
+    trans_cndn(true_lbl,flse_lbl,symt,code);
+    code.push_back(INST_ptr {new LBL {true_lbl}});
+    code.push_back(INST_ptr {new SET {dest,1}});
+    code.push_back(INST_ptr {new JMP {done_lbl}});
+    code.push_back(INST_ptr {new LBL {flse_lbl}});
+    code.push_back(INST_ptr {new SET {dest,0}});
+    code.push_back(INST_ptr {new LBL {done_lbl}});
+}
+
+void Equl::trans(std::string dest, SymT& symt, INST_vec& code) {
+    std::string true_lbl = symt.add_labl();
+    std::string flse_lbl = symt.add_labl();
+    std::string done_lbl = symt.add_labl();
+    trans_cndn(true_lbl,flse_lbl,symt,code);
+    code.push_back(INST_ptr {new LBL {true_lbl}});
+    code.push_back(INST_ptr {new SET {dest,1}});
+    code.push_back(INST_ptr {new JMP {done_lbl}});
+    code.push_back(INST_ptr {new LBL {flse_lbl}});
+    code.push_back(INST_ptr {new SET {dest,0}});
+    code.push_back(INST_ptr {new LBL {done_lbl}});
 }
 
 void Less::trans_cndn(std::string then_lbl, std::string else_lbl,
@@ -246,7 +318,7 @@ void And::trans_cndn(std::string then_lbl, std::string else_lbl,
                      SymT& symt, INST_vec& code) {
     std::string cont_lbl = symt.add_labl();
     left->trans_cndn(cont_lbl,else_lbl,symt,code);
-    code.push_back(INST_ptr {new LBL {cont_lbl}});    
+    code.push_back(INST_ptr {new LBL {cont_lbl}});
     rght->trans_cndn(then_lbl,else_lbl,symt,code);
 }
 
@@ -287,7 +359,7 @@ void Ltrl::trans(std::string dest, SymT& symt, INST_vec& code) {
 }
 
 void Ltrl::trans_cndn(std::string then_lbl, std::string else_lbl,
-                      [[maybe_unused]]SymT& symt, INST_vec& code) { 
+                      [[maybe_unused]]SymT& symt, INST_vec& code) {
     bool bval = std::get<bool>(valu);
     if (bval) {
         code.push_back(INST_ptr {new JMP {then_lbl}});
@@ -302,7 +374,7 @@ void Lkup::trans(std::string dest, [[maybe_unused]]SymT& symt,
 }
 
 void Lkup::trans_cndn(std::string then_lbl, std::string else_lbl,
-                      [[maybe_unused]]SymT& symt, INST_vec& code) { 
+                      [[maybe_unused]]SymT& symt, INST_vec& code) {
     code.push_back(INST_ptr {new BCZ {"gtz",name,then_lbl,else_lbl}});
 }
 
