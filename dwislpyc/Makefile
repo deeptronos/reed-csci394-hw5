@@ -3,7 +3,7 @@ TARGET=dwislpyc
 CXX=clang++
 YACCFLAGS=-d -v
 ifeq ($(UNAME), Darwin)
-	YACC=/usr/local/opt/bison/bin/bison
+	YACC=bison
 	LEX=/usr/local/opt/flex/bin/flex
 	INCLUDES=-I/usr/local/opt/flex/include
 	LDFLAGS=-L/usr/local/opt/flex/lib -L/usr/local/opt/bison/lib -lfl -ly
