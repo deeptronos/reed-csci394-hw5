@@ -240,14 +240,30 @@ void TmEq::trans([[maybe_unused]]std::string exit,
     expn->trans(name,symt,code);
 }
 
-void Whle::trans(std::string dest, SymT& symt, INST_vec& code) { //not done
-    if (std::holds_alternative<IntTy>(type)) {
-        std::string srce1 = symt.add_temp(left->type);
-        std::string srce2 = symt.add_temp(rght->type);
-        left->trans(srce1,symt,code);
-        rght->trans(srce2,symt,code);
-        code.push_back(INST_ptr {new ADD {dest,srce1,srce2}});
-    }
+void Whle::trans(std::string dest, SymT& symt, INST_vec& code) {
+    std::string true_lbl = symt.add_labl();
+    std::string flse_lbl = symt.add_labl();
+    std::string done_lbl = symt.add_labl();
+    trans_cndn(true_lbl,flse_lbl,symt,code);
+    code.push_back(INST_ptr {new LBL {true_lbl}});
+    code.push_back(INST_ptr {new SET {dest,1}});
+    code.push_back(INST_ptr {new JMP {done_lbl}});
+    code.push_back(INST_ptr {new LBL {flse_lbl}});
+    code.push_back(INST_ptr {new SET {dest,0}});
+    code.push_back(INST_ptr {new LBL {done_lbl}});
+}
+
+void IfEl::trans(std::string dest, SymT& symt, INST_vec& code) {
+    std::string true_lbl = symt.add_labl();
+    std::string flse_lbl = symt.add_labl();
+    std::string done_lbl = symt.add_labl();
+    trans_cndn(true_lbl,flse_lbl,symt,code);
+    code.push_back(INST_ptr {new LBL {true_lbl}});
+    code.push_back(INST_ptr {new SET {dest,1}});
+    code.push_back(INST_ptr {new JMP {done_lbl}});
+    code.push_back(INST_ptr {new LBL {flse_lbl}});
+    code.push_back(INST_ptr {new SET {dest,0}});
+    code.push_back(INST_ptr {new LBL {done_lbl}});
 }
 
 
