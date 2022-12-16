@@ -290,6 +290,49 @@ void LsEq::trans(std::string dest, SymT& symt, INST_vec& code) {
     code.push_back(INST_ptr {new LBL {done_lbl}});
 }
 
+void Not::trans_cndn(std::string then_lbl, std::string else_lbl,
+                     SymT& symt, INST_vec& code) {
+	std::string cont_lbl = symt.add_labl();
+	left->trans_cndn(cont_lbl,else_lbl,symt,code);
+	code.push_back(INST_ptr {new LBL {cont_lbl}});
+	rght->trans_cndn(then_lbl,else_lbl,symt,code);
+}
+
+void Not::trans(std::string dest, SymT& symt, INST_vec& code) {
+	std::string true_lbl = symt.add_labl();
+	std::string flse_lbl = symt.add_labl();
+	std::string done_lbl = symt.add_labl();
+	trans_cndn(true_lbl,flse_lbl,symt,code);
+	code.push_back(INST_ptr {new LBL {true_lbl}});
+	code.push_back(INST_ptr {new SET {dest,1}});
+	code.push_back(INST_ptr {new JMP {done_lbl}});
+	code.push_back(INST_ptr {new LBL {flse_lbl}});
+	code.push_back(INST_ptr {new SET {dest,0}});
+	code.push_back(INST_ptr {new LBL {done_lbl}});
+}
+
+
+void Or::trans_cndn(std::string then_lbl, std::string else_lbl,
+                     SymT& symt, INST_vec& code) {
+	std::string cont_lbl = symt.add_labl();
+	left->trans_cndn(cont_lbl,else_lbl,symt,code);
+	code.push_back(INST_ptr {new LBL {cont_lbl}});
+	rght->trans_cndn(then_lbl,else_lbl,symt,code);
+}
+
+void Or::trans(std::string dest, SymT& symt, INST_vec& code) {
+	std::string true_lbl = symt.add_labl();
+	std::string flse_lbl = symt.add_labl();
+	std::string done_lbl = symt.add_labl();
+	trans_cndn(true_lbl,flse_lbl,symt,code);
+	code.push_back(INST_ptr {new LBL {true_lbl}});
+	code.push_back(INST_ptr {new SET {dest,1}});
+	code.push_back(INST_ptr {new JMP {done_lbl}});
+	code.push_back(INST_ptr {new LBL {flse_lbl}});
+	code.push_back(INST_ptr {new SET {dest,0}});
+	code.push_back(INST_ptr {new LBL {done_lbl}});
+}
+
 void Equl::trans(std::string dest, SymT& symt, INST_vec& code) {
     std::string true_lbl = symt.add_labl();
     std::string flse_lbl = symt.add_labl();
@@ -329,6 +372,8 @@ void Less::trans(std::string dest, SymT& symt, INST_vec& code) {
     code.push_back(INST_ptr {new SET {dest,0}});
     code.push_back(INST_ptr {new LBL {done_lbl}});
 }
+
+
 
 void And::trans_cndn(std::string then_lbl, std::string else_lbl,
                      SymT& symt, INST_vec& code) {

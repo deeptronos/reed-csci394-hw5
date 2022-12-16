@@ -418,6 +418,23 @@ public:
     virtual void trans_cndn(std::string then_lbl, std::string else_lbl, SymT& symt, INST_vec& code);
 };
 
+class LsEq : public Expn {
+public:
+	Expn_ptr left;
+	Expn_ptr rght;
+	LsEq(Expn_ptr lf, Expn_ptr rg, Locn lo)
+			: Expn {lo}, left {lf}, rght {rg} { }
+	virtual ~LsEq(void) = default;
+	virtual Type chck(Defs& defs, SymT& symt);
+	virtual Valu eval(const Defs& defs, const Ctxt& ctxt) const;
+	virtual void output(std::ostream& os) const;
+	virtual void dump(int level = 0) const;
+	virtual void trans(std::string dest, SymT& symt, INST_vec& code);
+	virtual void trans_cndn(std::string then_lbl, std::string else_lbl, SymT& symt, INST_vec& code);
+
+
+};
+
 class And : public Expn {
 public:
     Expn_ptr left;
